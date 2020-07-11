@@ -22,7 +22,7 @@ citycodes = {
 
 @client.event
 async def on_ready():
-  print("logged in as " + client.user.name)
+  print('起動しました！')
 
 @client.event
 async def on_message(message):
