@@ -1,5 +1,7 @@
 import discord
-import request
+import urllib.request
+import json
+import re
 
 client = discord.Client()
 
@@ -24,22 +26,26 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    if message.author.bot:
-        return
-    if message.content.startswith('!weather'):
-        city = message.content.split()
-        city = city[1]
-        if city not in citycodes.keys():
-            await message.channel.send('正しい地域名を入力してね')
-            return
-        url = "http://weather.livedoor.com/forecast/webservice/json/v1?city="
-        payload = url + citycode[city]
-        result = requests.get(payload)
-        json_data = result.json()
-        weather1 = json_data["forecasts"][0]["telop"]
-        weather2 = json_data["forecasts"][1]["telop"]
-        weather3 = json_data["forecasts"][2]["telop"]
-        await message.channel.send(weather1)
-        await message.channel.send(weather2)
-        await message.channel.send(weather3)
+  if message.author != client.user:
+
+    reg_res = re.compile(u"(.+)の天気は？").search(message.content)
+    if reg_res:
+
+      if reg_res.group(1) in citycodes.keys():
+
+        citycode = citycodes[reg_res.group(1)]
+        resp = urllib.request.urlopen('http://weather.livedoor.com/forecast/webservice/json/v1?city=%s'%citycode).read()
+        resp = json.loads(resp.decode('utf-8'))
+
+        msg = resp['location']['city']
+        msg += "の天気は、\n"
+        for f in resp['forecasts']:
+          msg += f['dateLabel'] + "が" + f['telop'] + "\n"
+        msg += "です。"
+
+        await client.send_message(message.channel, message.author.mention + msg)
+
+      else:
+        await client.send_message(message.channel, "そこの天気はわかりません...")
+
 client.run("ここにトークン")
